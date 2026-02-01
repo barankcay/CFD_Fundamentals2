@@ -18,7 +18,7 @@ int main()
     const double thermalCond = 100;    // Thermal conductivity, W/(m·K)
     int iteration = 0;                 // Iteration counter
     const double residualLimit = 1e-3; // Convergence criterion for maximum residual
-    double maxResidual;                // Maximum residual value in current iteration
+    double accumulatedResidual;                // Maximum residual value in current iteration
     
     // ==================== DISCRETIZATION PARAMETERS ====================
     const int N = 5;                   // Number of control volumes (nodes)
@@ -28,7 +28,7 @@ int main()
     double residualCoeffSum;           // Temporary sum for residual calculations
 
     // ==================== SOLVER PARAMETERS ====================
-    const double alpha = 1.3;          // Successive Over-Relaxation (SOR) coefficient (>1 for over-relaxation)
+    const double alpha = 0.5;          // Successive Over-Relaxation (SOR) coefficient (>1 for over-relaxation)
     
     // ==================== VARIABLE DECLARATIONS ====================
     vector<double> T(N, 0);                           // Temperature at each node centroid, °C (initialized to 0)
@@ -99,9 +99,9 @@ int main()
     }
 
     // ==================== ITERATIVE SOLVER (SOR Method) ====================
-    maxResidual = 10;  // Initialize with value larger than residualLimit
+    accumulatedResidual = 10;  // Initialize with value larger than residualLimit
     
-    while (maxResidual > residualLimit)
+    while (accumulatedResidual > residualLimit)
     {
         // --- Update Temperature Field ---
         // Gauss-Seidel with Successive Over-Relaxation (SOR)
@@ -138,12 +138,17 @@ int main()
         }
         
         iteration = iteration + 1;  // Increment iteration counter
-        maxResidual = *max_element(residual.begin(), residual.end());  // Find maximum residual
+        accumulatedResidual = 0;  // Find maximum residual
+        for (int i = 0; i < N; i++)
+        {
+            accumulatedResidual += residual[i]*residual[i];  // Sum of squares for L2 norm
+        }
+        accumulatedResidual = sqrt(accumulatedResidual); // L2 norm of residuals
     }
 
     // ==================== OUTPUT RESULTS ====================
     cout << "Solution took " << iteration << " iterations to converge" << endl;
-    cout << "Maximum residual value is " << maxResidual << endl; 
+    cout << "Residual is " << accumulatedResidual << endl; 
     
     // Print temperature distribution
     for (int i = 0; i < N; i++)
